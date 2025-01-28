@@ -4,11 +4,7 @@ pragma solidity ^0.8.22;
 import "forge-std/Test.sol";
 import {ConditionalTokens, IERC20, ERC1155} from "../contracts/ConditionalTokens.sol";
 import {ERC20Mintable} from "./ERC20Mintable.sol";
-import {Safe} from "@gnosis/contracts/Safe.sol";
-import {SafeProxy} from "@gnosis/contracts/proxies/SafeProxy.sol";
-import {TokenCallbackHandler} from "@gnosis/contracts/handler/TokenCallbackHandler.sol";
 import {Forwarder} from "./Forwarder.sol";
-import {Enum as SafeEnum} from "@gnosis/contracts/common/Enum.sol";
 import {IERC1155Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 
 contract ConditionalTokensTest is Test {
@@ -610,89 +606,3 @@ contract ForwarderTraderTest is ConditionalTokensSplitMergeBase {
         forwarder.call(target, data);
     }
 }
-
-//! Gnosis Safe Trader Implementation. It is hard to test this, because `vm.expectRevert` in the tests above doesn't correctly apply to the Safe transaction execution itself, since we query the nonce and other stuff first. Also, it doesn't provide the error on TX failure, so we can't revert with the proper return data and match that in the tests.
-// contract SafeTraderTest is ConditionalTokensSplitMergeBase {
-//     Safe public safe;
-//     TokenCallbackHandler public callbackHandler;
-
-//     struct Signer {
-//         uint256 privateKey;
-//         address addr;
-//     }
-
-//     Signer[] public signers;
-
-//     function setUp() public override {
-//         safe = Safe(payable(new SafeProxy(address(new Safe()))));
-//         callbackHandler = new TokenCallbackHandler();
-
-//         // Create signers
-//         signers.push(Signer({privateKey: 10000, addr: vm.addr(10000)}));
-//         signers.push(Signer({privateKey: 10001, addr: vm.addr(10001)}));
-
-//         // Set up Safe
-//         address[] memory owners = new address[](2);
-//         owners[0] = signers[0].addr;
-//         owners[1] = signers[1].addr;
-//         safe.setup(
-//             owners,
-//             signers.length,
-//             address(0),
-//             "",
-//             address(callbackHandler),
-//             address(0),
-//             0,
-//             payable(0)
-//         );
-
-//         super.setUp();
-//     }
-
-//     function getTraderAddress() public view override returns (address) {
-//         return address(safe);
-//     }
-
-//     function executeCall(address target, bytes memory data) public override {
-//         bytes32 txHash = safe.getTransactionHash(
-//             target,
-//             0,
-//             data,
-//             SafeEnum.Operation.Call,
-//             0,
-//             0,
-//             0,
-//             address(0),
-//             address(0),
-//             safe.nonce()
-//         );
-
-//         bytes memory signatures;
-//         for (uint256 i = 0; i < signers.length; i++) {
-//             (uint8 v, bytes32 r, bytes32 s) = vm.sign(
-//                 signers[i].privateKey,
-//                 txHash
-//             );
-//             signatures = abi.encodePacked(signatures, r, s, v);
-//         }
-
-//         vm.prank(signers[0].addr);
-
-//         bool success = safe.execTransaction(
-//             target,
-//             0,
-//             data,
-//             SafeEnum.Operation.Call,
-//             0,
-//             0,
-//             0,
-//             address(0),
-//             payable(0),
-//             signatures
-//         );
-
-//         if (!success) {
-//             revert("safe transaction failed");
-//         }
-//     }
-// }
