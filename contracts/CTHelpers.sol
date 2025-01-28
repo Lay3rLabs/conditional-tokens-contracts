@@ -2,7 +2,6 @@
 pragma solidity ^0.8.22;
 
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 library CTHelpers {
     /// @dev Constructs a condition ID from an oracle, a question ID, and the outcome slot count for the question.
@@ -22,6 +21,378 @@ library CTHelpers {
         21888242871839275222246405745257275088696311157297823662689037894645226208583;
     uint constant B = 3;
 
+    //! when this is replaced with openzeppelin's Math.sqrt, the `getCollectionId` function infinite loops, probably due to the interdependent nature of this specific sqrt math implementation and the constant P that it uses
+    function sqrt(uint x) private pure returns (uint y) {
+        uint p = P;
+        // solium-disable-next-line security/no-inline-assembly
+        assembly {
+            // add chain generated via https://crypto.stackexchange.com/q/27179/71252
+            // and transformed to the following program:
+
+            // x=1; y=x+x; z=y+y; z=z+z; y=y+z; x=x+y; y=y+x; z=y+y; t=z+z; t=z+t; t=t+t;
+            // t=t+t; z=z+t; x=x+z; z=x+x; z=z+z; y=y+z; z=y+y; z=z+z; z=z+z; z=y+z; x=x+z;
+            // z=x+x; z=z+z; z=z+z; z=x+z; y=y+z; x=x+y; z=x+x; z=z+z; y=y+z; z=y+y; t=z+z;
+            // t=t+t; t=t+t; z=z+t; x=x+z; y=y+x; z=y+y; z=z+z; z=z+z; x=x+z; z=x+x; z=z+z;
+            // z=x+z; z=z+z; z=z+z; z=x+z; y=y+z; z=y+y; t=z+z; t=t+t; t=z+t; t=y+t; t=t+t;
+            // t=t+t; t=t+t; t=t+t; z=z+t; x=x+z; z=x+x; z=x+z; y=y+z; z=y+y; z=y+z; z=z+z;
+            // t=z+z; t=z+t; w=t+t; w=w+w; w=w+w; w=w+w; w=w+w; t=t+w; z=z+t; x=x+z; y=y+x;
+            // z=y+y; x=x+z; y=y+x; x=x+y; y=y+x; x=x+y; z=x+x; z=x+z; z=z+z; y=y+z; z=y+y;
+            // z=z+z; x=x+z; y=y+x; z=y+y; z=y+z; x=x+z; y=y+x; x=x+y; y=y+x; z=y+y; z=z+z;
+            // z=y+z; x=x+z; z=x+x; z=x+z; y=y+z; x=x+y; y=y+x; x=x+y; y=y+x; z=y+y; z=y+z;
+            // z=z+z; x=x+z; y=y+x; z=y+y; z=y+z; z=z+z; x=x+z; z=x+x; t=z+z; t=t+t; t=z+t;
+            // t=x+t; t=t+t; t=t+t; t=t+t; t=t+t; z=z+t; y=y+z; x=x+y; y=y+x; x=x+y; z=x+x;
+            // z=x+z; z=z+z; z=z+z; z=z+z; z=x+z; y=y+z; z=y+y; z=y+z; z=z+z; x=x+z; z=x+x;
+            // z=x+z; y=y+z; x=x+y; z=x+x; z=z+z; y=y+z; x=x+y; z=x+x; y=y+z; x=x+y; y=y+x;
+            // z=y+y; z=y+z; x=x+z; y=y+x; z=y+y; z=y+z; z=z+z; z=z+z; x=x+z; z=x+x; z=z+z;
+            // z=z+z; z=x+z; y=y+z; x=x+y; z=x+x; t=x+z; t=t+t; t=t+t; z=z+t; y=y+z; z=y+y;
+            // x=x+z; y=y+x; x=x+y; y=y+x; x=x+y; y=y+x; z=y+y; t=y+z; z=y+t; z=z+z; z=z+z;
+            // z=t+z; x=x+z; y=y+x; x=x+y; y=y+x; x=x+y; z=x+x; z=x+z; y=y+z; x=x+y; x=x+x;
+            // x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x;
+            // x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x;
+            // x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x;
+            // x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x;
+            // x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x;
+            // x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x;
+            // x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x;
+            // x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x;
+            // x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x;
+            // x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x;
+            // x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x; x=x+x;
+            // x=x+x; x=x+x; x=x+x; x=x+x; res=y+x
+            // res == (P + 1) // 4
+
+            y := mulmod(x, x, p)
+            {
+                let z := mulmod(y, y, p)
+                z := mulmod(z, z, p)
+                y := mulmod(y, z, p)
+                x := mulmod(x, y, p)
+                y := mulmod(y, x, p)
+                z := mulmod(y, y, p)
+                {
+                    let t := mulmod(z, z, p)
+                    t := mulmod(z, t, p)
+                    t := mulmod(t, t, p)
+                    t := mulmod(t, t, p)
+                    z := mulmod(z, t, p)
+                    x := mulmod(x, z, p)
+                    z := mulmod(x, x, p)
+                    z := mulmod(z, z, p)
+                    y := mulmod(y, z, p)
+                    z := mulmod(y, y, p)
+                    z := mulmod(z, z, p)
+                    z := mulmod(z, z, p)
+                    z := mulmod(y, z, p)
+                    x := mulmod(x, z, p)
+                    z := mulmod(x, x, p)
+                    z := mulmod(z, z, p)
+                    z := mulmod(z, z, p)
+                    z := mulmod(x, z, p)
+                    y := mulmod(y, z, p)
+                    x := mulmod(x, y, p)
+                    z := mulmod(x, x, p)
+                    z := mulmod(z, z, p)
+                    y := mulmod(y, z, p)
+                    z := mulmod(y, y, p)
+                    t := mulmod(z, z, p)
+                    t := mulmod(t, t, p)
+                    t := mulmod(t, t, p)
+                    z := mulmod(z, t, p)
+                    x := mulmod(x, z, p)
+                    y := mulmod(y, x, p)
+                    z := mulmod(y, y, p)
+                    z := mulmod(z, z, p)
+                    z := mulmod(z, z, p)
+                    x := mulmod(x, z, p)
+                    z := mulmod(x, x, p)
+                    z := mulmod(z, z, p)
+                    z := mulmod(x, z, p)
+                    z := mulmod(z, z, p)
+                    z := mulmod(z, z, p)
+                    z := mulmod(x, z, p)
+                    y := mulmod(y, z, p)
+                    z := mulmod(y, y, p)
+                    t := mulmod(z, z, p)
+                    t := mulmod(t, t, p)
+                    t := mulmod(z, t, p)
+                    t := mulmod(y, t, p)
+                    t := mulmod(t, t, p)
+                    t := mulmod(t, t, p)
+                    t := mulmod(t, t, p)
+                    t := mulmod(t, t, p)
+                    z := mulmod(z, t, p)
+                    x := mulmod(x, z, p)
+                    z := mulmod(x, x, p)
+                    z := mulmod(x, z, p)
+                    y := mulmod(y, z, p)
+                    z := mulmod(y, y, p)
+                    z := mulmod(y, z, p)
+                    z := mulmod(z, z, p)
+                    t := mulmod(z, z, p)
+                    t := mulmod(z, t, p)
+                    {
+                        let w := mulmod(t, t, p)
+                        w := mulmod(w, w, p)
+                        w := mulmod(w, w, p)
+                        w := mulmod(w, w, p)
+                        w := mulmod(w, w, p)
+                        t := mulmod(t, w, p)
+                    }
+                    z := mulmod(z, t, p)
+                    x := mulmod(x, z, p)
+                    y := mulmod(y, x, p)
+                    z := mulmod(y, y, p)
+                    x := mulmod(x, z, p)
+                    y := mulmod(y, x, p)
+                    x := mulmod(x, y, p)
+                    y := mulmod(y, x, p)
+                    x := mulmod(x, y, p)
+                    z := mulmod(x, x, p)
+                    z := mulmod(x, z, p)
+                    z := mulmod(z, z, p)
+                    y := mulmod(y, z, p)
+                    z := mulmod(y, y, p)
+                    z := mulmod(z, z, p)
+                    x := mulmod(x, z, p)
+                    y := mulmod(y, x, p)
+                    z := mulmod(y, y, p)
+                    z := mulmod(y, z, p)
+                    x := mulmod(x, z, p)
+                    y := mulmod(y, x, p)
+                    x := mulmod(x, y, p)
+                    y := mulmod(y, x, p)
+                    z := mulmod(y, y, p)
+                    z := mulmod(z, z, p)
+                    z := mulmod(y, z, p)
+                    x := mulmod(x, z, p)
+                    z := mulmod(x, x, p)
+                    z := mulmod(x, z, p)
+                    y := mulmod(y, z, p)
+                    x := mulmod(x, y, p)
+                    y := mulmod(y, x, p)
+                    x := mulmod(x, y, p)
+                    y := mulmod(y, x, p)
+                    z := mulmod(y, y, p)
+                    z := mulmod(y, z, p)
+                    z := mulmod(z, z, p)
+                    x := mulmod(x, z, p)
+                    y := mulmod(y, x, p)
+                    z := mulmod(y, y, p)
+                    z := mulmod(y, z, p)
+                    z := mulmod(z, z, p)
+                    x := mulmod(x, z, p)
+                    z := mulmod(x, x, p)
+                    t := mulmod(z, z, p)
+                    t := mulmod(t, t, p)
+                    t := mulmod(z, t, p)
+                    t := mulmod(x, t, p)
+                    t := mulmod(t, t, p)
+                    t := mulmod(t, t, p)
+                    t := mulmod(t, t, p)
+                    t := mulmod(t, t, p)
+                    z := mulmod(z, t, p)
+                    y := mulmod(y, z, p)
+                    x := mulmod(x, y, p)
+                    y := mulmod(y, x, p)
+                    x := mulmod(x, y, p)
+                    z := mulmod(x, x, p)
+                    z := mulmod(x, z, p)
+                    z := mulmod(z, z, p)
+                    z := mulmod(z, z, p)
+                    z := mulmod(z, z, p)
+                    z := mulmod(x, z, p)
+                    y := mulmod(y, z, p)
+                    z := mulmod(y, y, p)
+                    z := mulmod(y, z, p)
+                    z := mulmod(z, z, p)
+                    x := mulmod(x, z, p)
+                    z := mulmod(x, x, p)
+                    z := mulmod(x, z, p)
+                    y := mulmod(y, z, p)
+                    x := mulmod(x, y, p)
+                    z := mulmod(x, x, p)
+                    z := mulmod(z, z, p)
+                    y := mulmod(y, z, p)
+                    x := mulmod(x, y, p)
+                    z := mulmod(x, x, p)
+                    y := mulmod(y, z, p)
+                    x := mulmod(x, y, p)
+                    y := mulmod(y, x, p)
+                    z := mulmod(y, y, p)
+                    z := mulmod(y, z, p)
+                    x := mulmod(x, z, p)
+                    y := mulmod(y, x, p)
+                    z := mulmod(y, y, p)
+                    z := mulmod(y, z, p)
+                    z := mulmod(z, z, p)
+                    z := mulmod(z, z, p)
+                    x := mulmod(x, z, p)
+                    z := mulmod(x, x, p)
+                    z := mulmod(z, z, p)
+                    z := mulmod(z, z, p)
+                    z := mulmod(x, z, p)
+                    y := mulmod(y, z, p)
+                    x := mulmod(x, y, p)
+                    z := mulmod(x, x, p)
+                    t := mulmod(x, z, p)
+                    t := mulmod(t, t, p)
+                    t := mulmod(t, t, p)
+                    z := mulmod(z, t, p)
+                    y := mulmod(y, z, p)
+                    z := mulmod(y, y, p)
+                    x := mulmod(x, z, p)
+                    y := mulmod(y, x, p)
+                    x := mulmod(x, y, p)
+                    y := mulmod(y, x, p)
+                    x := mulmod(x, y, p)
+                    y := mulmod(y, x, p)
+                    z := mulmod(y, y, p)
+                    t := mulmod(y, z, p)
+                    z := mulmod(y, t, p)
+                    z := mulmod(z, z, p)
+                    z := mulmod(z, z, p)
+                    z := mulmod(t, z, p)
+                }
+                x := mulmod(x, z, p)
+                y := mulmod(y, x, p)
+                x := mulmod(x, y, p)
+                y := mulmod(y, x, p)
+                x := mulmod(x, y, p)
+                z := mulmod(x, x, p)
+                z := mulmod(x, z, p)
+                y := mulmod(y, z, p)
+            }
+            x := mulmod(x, y, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            x := mulmod(x, x, p)
+            y := mulmod(y, x, p)
+        }
+    }
+
     /// @dev Constructs an outcome collection ID from a parent collection and an outcome collection.
     /// @param parentCollectionId Collection ID of the parent outcome collection, or bytes32(0) if there's no parent.
     /// @param conditionId Condition ID of the outcome collection to combine with the parent outcome collection.
@@ -38,7 +409,7 @@ library CTHelpers {
         do {
             x1 = addmod(x1, 1, P);
             yy = addmod(mulmod(x1, mulmod(x1, x1, P), P), B, P);
-            y1 = Math.sqrt(yy);
+            y1 = sqrt(yy);
         } while (mulmod(y1, y1, P) != yy);
         if ((odd && y1 % 2 == 0) || (!odd && y1 % 2 == 1)) y1 = P - y1;
 
@@ -47,7 +418,7 @@ library CTHelpers {
             odd = x2 >> 254 != 0;
             x2 = (x2 << 2) >> 2;
             yy = addmod(mulmod(x2, mulmod(x2, x2, P), P), B, P);
-            uint y2 = Math.sqrt(yy);
+            uint y2 = sqrt(yy);
             if ((odd && y2 % 2 == 0) || (!odd && y2 % 2 == 1)) y2 = P - y2;
             require(mulmod(y2, y2, P) == yy, "invalid parent collection ID");
 

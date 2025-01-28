@@ -6,7 +6,12 @@ import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Re
 contract Forwarder is IERC1155Receiver {
     function call(address to, bytes calldata data) external {
         (bool success, bytes memory retData) = to.call(data);
-        require(success, string(retData));
+        // on failure, revert with the return data as-is. `mload(retData)` gets the 4-byte length of the return data, and `add(retData, 0x20)` is the pointer to the start of the return data (after the length)
+        if (!success) {
+            assembly {
+                revert(add(retData, 0x20), mload(retData))
+            }
+        }
     }
 
     function onERC1155Received(
@@ -15,7 +20,7 @@ contract Forwarder is IERC1155Receiver {
         uint256 /* id */,
         uint256 /* value */,
         bytes calldata /* data */
-    ) external returns (bytes4) {
+    ) external pure returns (bytes4) {
         return this.onERC1155Received.selector;
     }
 
@@ -25,7 +30,13 @@ contract Forwarder is IERC1155Receiver {
         uint256[] calldata /* ids */,
         uint256[] calldata /* values */,
         bytes calldata /* data */
-    ) external returns (bytes4) {
+    ) external pure returns (bytes4) {
         return this.onERC1155BatchReceived.selector;
+    }
+
+    function supportsInterface(
+        bytes4 interfaceId
+    ) external pure returns (bool) {
+        return interfaceId == type(IERC1155Receiver).interfaceId;
     }
 }
