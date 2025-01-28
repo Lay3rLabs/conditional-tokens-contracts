@@ -96,6 +96,14 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
     uint256 public constant COLLATERAL_TOKEN_COUNT = 10 ether;
     uint256 public constant TRANSFER_AMOUNT = 1 ether;
 
+    // for the 'many conditions' tests at the bottom
+    struct Condition {
+        bytes32 id;
+        bytes32 questionId;
+        uint256 outcomeSlotCount;
+    }
+    Condition[4] public conditions;
+
     function setUp() public virtual {
         conditionalTokens = new ConditionalTokens("");
         collateralToken = new ERC20Mintable();
@@ -125,6 +133,18 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
                 partition[1]
             )
         );
+
+        for (uint256 i = 0; i < conditions.length; i++) {
+            conditions[i].questionId = keccak256(
+                abi.encodePacked("question", i)
+            );
+            conditions[i].outcomeSlotCount = 4;
+            conditions[i].id = conditionalTokens.getConditionId(
+                ORACLE,
+                conditions[i].questionId,
+                conditions[i].outcomeSlotCount
+            );
+        }
     }
 
     // Abstract functions to be implemented by different trader types
@@ -565,6 +585,214 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
             collateralBalanceOf(trader),
             COLLATERAL_TOKEN_COUNT - SPLIT_AMOUNT + payout
         );
+    }
+
+    function testManyConditionsSplit() public {
+        // Mint and approve collateral
+        collateralToken.mint(trader, COLLATERAL_TOKEN_COUNT);
+        executeCall(
+            address(collateralToken),
+            abi.encodeWithSelector(
+                IERC20.approve.selector,
+                address(conditionalTokens),
+                COLLATERAL_TOKEN_COUNT
+            )
+        );
+
+        for (uint256 i = 0; i < conditions.length; i++) {
+            conditionalTokens.prepareCondition(
+                ORACLE,
+                conditions[i].questionId,
+                conditions[i].outcomeSlotCount
+            );
+        }
+
+        uint256[] memory partition0 = new uint256[](2);
+        partition0[0] = 7;
+        partition0[1] = 8;
+
+        split(
+            conditions[0].id,
+            partition0,
+            COLLATERAL_TOKEN_COUNT,
+            NULL_BYTES32
+        );
+        transfer(
+            COUNTERPARTY,
+            conditionalTokens.getPositionId(
+                IERC20(address(collateralToken)),
+                conditionalTokens.getCollectionId(
+                    NULL_BYTES32,
+                    conditions[0].id,
+                    partition0[1]
+                )
+            ),
+            COLLATERAL_TOKEN_COUNT
+        );
+
+        // split to a deeper position with another condition
+        uint256[] memory partition2 = new uint256[](3);
+        partition2[0] = 1;
+        partition2[1] = 2;
+        partition2[2] = 12;
+        bytes32 parentCollectionId = conditionalTokens.getCollectionId(
+            NULL_BYTES32,
+            conditions[0].id,
+            partition0[0]
+        );
+
+        vm.expectEmit(true, true, true, true);
+        emit ConditionalTokens.PositionSplit(
+            trader,
+            IERC20(address(collateralToken)),
+            parentCollectionId,
+            conditions[1].id,
+            partition2,
+            SPLIT_AMOUNT
+        );
+        split(conditions[1].id, partition2, SPLIT_AMOUNT, parentCollectionId);
+
+        // ensure value in parent position is burned
+        assertEq(
+            conditionalTokens.balanceOf(
+                trader,
+                conditionalTokens.getPositionId(
+                    IERC20(address(collateralToken)),
+                    parentCollectionId
+                )
+            ),
+            COLLATERAL_TOKEN_COUNT - SPLIT_AMOUNT
+        );
+
+        // ensure value minted in child positions
+        assertEq(
+            conditionalTokens.balanceOf(
+                trader,
+                conditionalTokens.getPositionId(
+                    IERC20(address(collateralToken)),
+                    conditionalTokens.getCollectionId(
+                        parentCollectionId,
+                        conditions[1].id,
+                        partition2[0]
+                    )
+                )
+            ),
+            SPLIT_AMOUNT
+        );
+        assertEq(
+            conditionalTokens.balanceOf(
+                trader,
+                conditionalTokens.getPositionId(
+                    IERC20(address(collateralToken)),
+                    conditionalTokens.getCollectionId(
+                        parentCollectionId,
+                        conditions[1].id,
+                        partition2[1]
+                    )
+                )
+            ),
+            SPLIT_AMOUNT
+        );
+    }
+
+    function testManyConditionsReport() public {
+        // Mint and approve collateral
+        collateralToken.mint(trader, COLLATERAL_TOKEN_COUNT);
+        executeCall(
+            address(collateralToken),
+            abi.encodeWithSelector(
+                IERC20.approve.selector,
+                address(conditionalTokens),
+                COLLATERAL_TOKEN_COUNT
+            )
+        );
+
+        for (uint256 i = 0; i < conditions.length; i++) {
+            conditionalTokens.prepareCondition(
+                ORACLE,
+                conditions[i].questionId,
+                conditions[i].outcomeSlotCount
+            );
+        }
+
+        uint256[] memory partition0 = new uint256[](2);
+        partition0[0] = 7;
+        partition0[1] = 8;
+
+        uint256[] memory finalReport = new uint256[](4);
+        finalReport[0] = 0;
+        finalReport[1] = 33;
+        finalReport[2] = 289;
+        finalReport[3] = 678;
+
+        uint256[] memory redeemSet = new uint256[](1);
+        redeemSet[0] = partition0[0];
+
+        uint256 payoutDenominator = 0;
+        uint256 payout = 0;
+        for (uint256 i = 0; i < finalReport.length; i++) {
+            payoutDenominator += finalReport[i];
+            if (redeemSet[0] & (1 << i) != 0) {
+                payout += finalReport[i];
+            }
+        }
+        payout = (payout * COLLATERAL_TOKEN_COUNT) / payoutDenominator;
+
+        split(
+            conditions[0].id,
+            partition0,
+            COLLATERAL_TOKEN_COUNT,
+            NULL_BYTES32
+        );
+        transfer(
+            COUNTERPARTY,
+            conditionalTokens.getPositionId(
+                IERC20(address(collateralToken)),
+                conditionalTokens.getCollectionId(
+                    NULL_BYTES32,
+                    conditions[0].id,
+                    partition0[1]
+                )
+            ),
+            COLLATERAL_TOKEN_COUNT
+        );
+
+        // report and emit ConditionResolution event
+        vm.expectEmit(true, true, true, true);
+        emit ConditionalTokens.ConditionResolution(
+            conditions[0].id,
+            ORACLE,
+            conditions[0].questionId,
+            conditions[0].outcomeSlotCount,
+            finalReport
+        );
+        vm.prank(ORACLE);
+        conditionalTokens.reportPayouts(conditions[0].questionId, finalReport);
+
+        // should reflect report via payoutNumerators
+        for (uint256 i = 0; i < finalReport.length; i++) {
+            assertEq(
+                conditionalTokens.payoutNumerators(conditions[0].id, i),
+                finalReport[i]
+            );
+        }
+
+        // should not allow another update to the report
+        vm.expectRevert("payout denominator already set");
+        vm.prank(ORACLE);
+        conditionalTokens.reportPayouts(conditions[0].questionId, finalReport);
+
+        // redeem should emit PayoutRedemption event
+        vm.expectEmit(true, true, true, true);
+        emit ConditionalTokens.PayoutRedemption(
+            trader,
+            IERC20(address(collateralToken)),
+            NULL_BYTES32,
+            conditions[0].id,
+            redeemSet,
+            payout
+        );
+        redeem(conditions[0].id, redeemSet, NULL_BYTES32);
     }
 }
 
