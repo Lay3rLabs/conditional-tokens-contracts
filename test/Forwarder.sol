@@ -15,28 +15,26 @@ contract Forwarder is IERC1155Receiver {
     }
 
     function onERC1155Received(
-        address /* operator */,
-        address /* from */,
-        uint256 /* id */,
-        uint256 /* value */,
+        address, /* operator */
+        address, /* from */
+        uint256, /* id */
+        uint256, /* value */
         bytes calldata /* data */
     ) external pure returns (bytes4) {
         return this.onERC1155Received.selector;
     }
 
     function onERC1155BatchReceived(
-        address /* operator */,
-        address /* from */,
-        uint256[] calldata /* ids */,
-        uint256[] calldata /* values */,
+        address, /* operator */
+        address, /* from */
+        uint256[] calldata, /* ids */
+        uint256[] calldata, /* values */
         bytes calldata /* data */
     ) external pure returns (bytes4) {
         return this.onERC1155BatchReceived.selector;
     }
 
-    function supportsInterface(
-        bytes4 interfaceId
-    ) external pure returns (bool) {
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
         return interfaceId == type(IERC1155Receiver).interfaceId;
     }
 }

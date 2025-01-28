@@ -19,11 +19,7 @@ contract ConditionalTokensTest is Test {
     function setUp() public {
         conditionalTokens = new ConditionalTokens("");
         questionId = keccak256("question");
-        conditionId = conditionalTokens.getConditionId(
-            ORACLE,
-            questionId,
-            OUTCOME_SLOT_COUNT
-        );
+        conditionId = conditionalTokens.getConditionId(ORACLE, questionId, OUTCOME_SLOT_COUNT);
     }
 
     function test_PrepareCondition_InvalidOutcomeSlots() public {
@@ -42,36 +38,20 @@ contract ConditionalTokensTest is Test {
 
         // Expect the event to be emitted
         vm.expectEmit(true, true, true, true);
-        emit ConditionalTokens.ConditionPreparation(
-            conditionId,
-            ORACLE,
-            questionId,
-            OUTCOME_SLOT_COUNT
-        );
+        emit ConditionalTokens.ConditionPreparation(conditionId, ORACLE, questionId, OUTCOME_SLOT_COUNT);
 
         // Call the function
-        conditionalTokens.prepareCondition(
-            ORACLE,
-            questionId,
-            OUTCOME_SLOT_COUNT
-        );
+        conditionalTokens.prepareCondition(ORACLE, questionId, OUTCOME_SLOT_COUNT);
 
         // Outcome slot count should be set
-        assertEq(
-            conditionalTokens.getOutcomeSlotCount(conditionId),
-            OUTCOME_SLOT_COUNT
-        );
+        assertEq(conditionalTokens.getOutcomeSlotCount(conditionId), OUTCOME_SLOT_COUNT);
 
         // Payout denominator should not be set
         assertEq(conditionalTokens.payoutDenominator(conditionId), 0);
 
         // Cannot prepare the same condition more than once
         vm.expectRevert("condition already prepared");
-        conditionalTokens.prepareCondition(
-            ORACLE,
-            questionId,
-            OUTCOME_SLOT_COUNT
-        );
+        conditionalTokens.prepareCondition(ORACLE, questionId, OUTCOME_SLOT_COUNT);
     }
 }
 
@@ -102,6 +82,7 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
         bytes32 questionId;
         uint256 outcomeSlotCount;
     }
+
     Condition[4] public conditions;
 
     function setUp() public virtual {
@@ -109,41 +90,22 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
         collateralToken = new ERC20Mintable();
         trader = getTraderAddress();
         questionId = keccak256("question");
-        conditionId = conditionalTokens.getConditionId(
-            ORACLE,
-            questionId,
-            OUTCOME_SLOT_COUNT
-        );
+        conditionId = conditionalTokens.getConditionId(ORACLE, questionId, OUTCOME_SLOT_COUNT);
         partition = new uint256[](2);
         partition[0] = 1;
         partition[1] = 2;
         firstPositionId = conditionalTokens.getPositionId(
-            IERC20(address(collateralToken)),
-            conditionalTokens.getCollectionId(
-                NULL_BYTES32,
-                conditionId,
-                partition[0]
-            )
+            IERC20(address(collateralToken)), conditionalTokens.getCollectionId(NULL_BYTES32, conditionId, partition[0])
         );
         secondPositionId = conditionalTokens.getPositionId(
-            IERC20(address(collateralToken)),
-            conditionalTokens.getCollectionId(
-                NULL_BYTES32,
-                conditionId,
-                partition[1]
-            )
+            IERC20(address(collateralToken)), conditionalTokens.getCollectionId(NULL_BYTES32, conditionId, partition[1])
         );
 
         for (uint256 i = 0; i < conditions.length; i++) {
-            conditions[i].questionId = keccak256(
-                abi.encodePacked("question", i)
-            );
+            conditions[i].questionId = keccak256(abi.encodePacked("question", i));
             conditions[i].outcomeSlotCount = 4;
-            conditions[i].id = conditionalTokens.getConditionId(
-                ORACLE,
-                conditions[i].questionId,
-                conditions[i].outcomeSlotCount
-            );
+            conditions[i].id =
+                conditionalTokens.getConditionId(ORACLE, conditions[i].questionId, conditions[i].outcomeSlotCount);
         }
     }
 
@@ -151,12 +113,9 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
     function getTraderAddress() public view virtual returns (address);
     function executeCall(address target, bytes memory data) public virtual;
 
-    function split(
-        bytes32 conditionId_,
-        uint256[] memory partition_,
-        uint256 amount,
-        bytes32 parentCollectionId
-    ) public {
+    function split(bytes32 conditionId_, uint256[] memory partition_, uint256 amount, bytes32 parentCollectionId)
+        public
+    {
         executeCall(
             address(conditionalTokens),
             abi.encodeWithSelector(
@@ -170,12 +129,9 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
         );
     }
 
-    function merge(
-        bytes32 conditionId_,
-        uint256[] memory partition_,
-        uint256 amount,
-        bytes32 parentCollectionId
-    ) public {
+    function merge(bytes32 conditionId_, uint256[] memory partition_, uint256 amount, bytes32 parentCollectionId)
+        public
+    {
         executeCall(
             address(conditionalTokens),
             abi.encodeWithSelector(
@@ -189,11 +145,7 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
         );
     }
 
-    function redeem(
-        bytes32 conditionId_,
-        uint256[] memory indexSets,
-        bytes32 parentCollectionId
-    ) public {
+    function redeem(bytes32 conditionId_, uint256[] memory indexSets, bytes32 parentCollectionId) public {
         executeCall(
             address(conditionalTokens),
             abi.encodeWithSelector(
@@ -209,14 +161,7 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
     function transfer(address to, uint256 positionId, uint256 amount) public {
         executeCall(
             address(conditionalTokens),
-            abi.encodeWithSelector(
-                ERC1155.safeTransferFrom.selector,
-                trader,
-                to,
-                positionId,
-                amount,
-                ""
-            )
+            abi.encodeWithSelector(ERC1155.safeTransferFrom.selector, trader, to, positionId, amount, "")
         );
     }
 
@@ -229,11 +174,7 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
         collateralToken.mint(trader, COLLATERAL_TOKEN_COUNT);
         executeCall(
             address(collateralToken),
-            abi.encodeWithSelector(
-                IERC20.approve.selector,
-                address(conditionalTokens),
-                COLLATERAL_TOKEN_COUNT
-            )
+            abi.encodeWithSelector(IERC20.approve.selector, address(conditionalTokens), COLLATERAL_TOKEN_COUNT)
         );
 
         // Fail to split if condition not prepared
@@ -241,19 +182,11 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
         split(conditionId, partition, SPLIT_AMOUNT, NULL_BYTES32);
 
         // Prepare condition
-        conditionalTokens.prepareCondition(
-            ORACLE,
-            questionId,
-            OUTCOME_SLOT_COUNT
-        );
+        conditionalTokens.prepareCondition(ORACLE, questionId, OUTCOME_SLOT_COUNT);
 
         // Fail to prepare again
         vm.expectRevert("condition already prepared");
-        conditionalTokens.prepareCondition(
-            ORACLE,
-            questionId,
-            OUTCOME_SLOT_COUNT
-        );
+        conditionalTokens.prepareCondition(ORACLE, questionId, OUTCOME_SLOT_COUNT);
 
         // Fail to split if given index sets aren't disjoint
         vm.expectRevert("partition not disjoint");
@@ -280,41 +213,22 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
         vm.expectRevert("got empty or singleton partition");
         uint256[] memory incompleteSingletonPartition = new uint256[](1);
         incompleteSingletonPartition[0] = 1;
-        split(
-            conditionId,
-            incompleteSingletonPartition,
-            SPLIT_AMOUNT,
-            NULL_BYTES32
-        );
+        split(conditionId, incompleteSingletonPartition, SPLIT_AMOUNT, NULL_BYTES32);
 
         // valid split, expect PositionSplit event to be emitted
         vm.expectEmit(true, true, true, true);
         emit ConditionalTokens.PositionSplit(
-            trader,
-            IERC20(address(collateralToken)),
-            NULL_BYTES32,
-            conditionId,
-            partition,
-            SPLIT_AMOUNT
+            trader, IERC20(address(collateralToken)), NULL_BYTES32, conditionId, partition, SPLIT_AMOUNT
         );
         split(conditionId, partition, SPLIT_AMOUNT, NULL_BYTES32);
 
         // should transfer split collateral from trader
-        assertEq(
-            collateralBalanceOf(trader),
-            COLLATERAL_TOKEN_COUNT - SPLIT_AMOUNT
-        );
+        assertEq(collateralBalanceOf(trader), COLLATERAL_TOKEN_COUNT - SPLIT_AMOUNT);
         assertEq(collateralBalanceOf(address(conditionalTokens)), SPLIT_AMOUNT);
 
         // should mint amounts in positions associated with partition
-        assertEq(
-            conditionalTokens.balanceOf(trader, firstPositionId),
-            SPLIT_AMOUNT
-        );
-        assertEq(
-            conditionalTokens.balanceOf(trader, secondPositionId),
-            SPLIT_AMOUNT
-        );
+        assertEq(conditionalTokens.balanceOf(trader, firstPositionId), SPLIT_AMOUNT);
+        assertEq(conditionalTokens.balanceOf(trader, secondPositionId), SPLIT_AMOUNT);
 
         // should not merge if amount exceeds balances in to-be-merged positions
         vm.expectRevert(
@@ -331,34 +245,17 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
         // valid merge, expect PositionsMerge event to be emitted
         vm.expectEmit(true, true, true, true);
         emit ConditionalTokens.PositionsMerge(
-            trader,
-            IERC20(address(collateralToken)),
-            NULL_BYTES32,
-            conditionId,
-            partition,
-            MERGE_AMOUNT
+            trader, IERC20(address(collateralToken)), NULL_BYTES32, conditionId, partition, MERGE_AMOUNT
         );
         merge(conditionId, partition, MERGE_AMOUNT, NULL_BYTES32);
 
         // should transfer split collateral back to trader
-        assertEq(
-            collateralBalanceOf(trader),
-            COLLATERAL_TOKEN_COUNT - SPLIT_AMOUNT + MERGE_AMOUNT
-        );
-        assertEq(
-            collateralBalanceOf(address(conditionalTokens)),
-            SPLIT_AMOUNT - MERGE_AMOUNT
-        );
+        assertEq(collateralBalanceOf(trader), COLLATERAL_TOKEN_COUNT - SPLIT_AMOUNT + MERGE_AMOUNT);
+        assertEq(collateralBalanceOf(address(conditionalTokens)), SPLIT_AMOUNT - MERGE_AMOUNT);
 
         // should burn amounts in positions associated with partition
-        assertEq(
-            conditionalTokens.balanceOf(trader, firstPositionId),
-            SPLIT_AMOUNT - MERGE_AMOUNT
-        );
-        assertEq(
-            conditionalTokens.balanceOf(trader, secondPositionId),
-            SPLIT_AMOUNT - MERGE_AMOUNT
-        );
+        assertEq(conditionalTokens.balanceOf(trader, firstPositionId), SPLIT_AMOUNT - MERGE_AMOUNT);
+        assertEq(conditionalTokens.balanceOf(trader, secondPositionId), SPLIT_AMOUNT - MERGE_AMOUNT);
     }
 
     function testMergeAndTransferAndReport() public {
@@ -370,52 +267,30 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
         collateralToken.mint(trader, COLLATERAL_TOKEN_COUNT);
         executeCall(
             address(collateralToken),
-            abi.encodeWithSelector(
-                IERC20.approve.selector,
-                address(conditionalTokens),
-                COLLATERAL_TOKEN_COUNT
-            )
+            abi.encodeWithSelector(IERC20.approve.selector, address(conditionalTokens), COLLATERAL_TOKEN_COUNT)
         );
 
         // Prepare condition
-        conditionalTokens.prepareCondition(
-            ORACLE,
-            questionId,
-            OUTCOME_SLOT_COUNT
-        );
+        conditionalTokens.prepareCondition(ORACLE, questionId, OUTCOME_SLOT_COUNT);
 
         // valid split, expect PositionSplit event to be emitted
         vm.expectEmit(true, true, true, true);
         emit ConditionalTokens.PositionSplit(
-            trader,
-            IERC20(address(collateralToken)),
-            NULL_BYTES32,
-            conditionId,
-            partition,
-            SPLIT_AMOUNT
+            trader, IERC20(address(collateralToken)), NULL_BYTES32, conditionId, partition, SPLIT_AMOUNT
         );
         split(conditionId, partition, SPLIT_AMOUNT, NULL_BYTES32);
 
         // valid merge, expect PositionsMerge event to be emitted
         vm.expectEmit(true, true, true, true);
         emit ConditionalTokens.PositionsMerge(
-            trader,
-            IERC20(address(collateralToken)),
-            NULL_BYTES32,
-            conditionId,
-            partition,
-            MERGE_AMOUNT
+            trader, IERC20(address(collateralToken)), NULL_BYTES32, conditionId, partition, MERGE_AMOUNT
         );
         merge(conditionId, partition, MERGE_AMOUNT, NULL_BYTES32);
 
         // should not allow transferring more than split balance
         vm.expectRevert(
             abi.encodeWithSelector(
-                IERC1155Errors.ERC1155InsufficientBalance.selector,
-                trader,
-                1 ether,
-                SPLIT_AMOUNT + 1,
-                firstPositionId
+                IERC1155Errors.ERC1155InsufficientBalance.selector, trader, 1 ether, SPLIT_AMOUNT + 1, firstPositionId
             )
         );
         transfer(COUNTERPARTY, firstPositionId, SPLIT_AMOUNT + 1);
@@ -428,10 +303,7 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
         // should not allow reporting with wrong questionId
         vm.expectRevert("condition not prepared or found");
         vm.prank(ORACLE);
-        conditionalTokens.reportPayouts(
-            keccak256("wrong question"),
-            payoutNumerators
-        );
+        conditionalTokens.reportPayouts(keccak256("wrong question"), payoutNumerators);
 
         // should not allow reporting with no slots
         vm.expectRevert("there should be more than one outcome slot");
@@ -461,31 +333,20 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
         // report and emit ConditionResolution event
         vm.expectEmit(true, true, true, true);
         emit ConditionalTokens.ConditionResolution(
-            conditionId,
-            ORACLE,
-            questionId,
-            OUTCOME_SLOT_COUNT,
-            payoutNumerators
+            conditionId, ORACLE, questionId, OUTCOME_SLOT_COUNT, payoutNumerators
         );
         vm.prank(ORACLE);
         conditionalTokens.reportPayouts(questionId, payoutNumerators);
 
         // should make reported payout numerators available
         for (uint256 i = 0; i < payoutNumerators.length; i++) {
-            assertEq(
-                conditionalTokens.payoutNumerators(conditionId, i),
-                payoutNumerators[i]
-            );
+            assertEq(conditionalTokens.payoutNumerators(conditionId, i), payoutNumerators[i]);
         }
 
         // should not merge if any amount is short
         vm.expectRevert(
             abi.encodeWithSelector(
-                IERC1155Errors.ERC1155InsufficientBalance.selector,
-                trader,
-                0,
-                SPLIT_AMOUNT,
-                firstPositionId
+                IERC1155Errors.ERC1155InsufficientBalance.selector, trader, 0, SPLIT_AMOUNT, firstPositionId
             )
         );
         merge(conditionId, partition, SPLIT_AMOUNT, NULL_BYTES32);
@@ -500,19 +361,11 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
         collateralToken.mint(trader, COLLATERAL_TOKEN_COUNT);
         executeCall(
             address(collateralToken),
-            abi.encodeWithSelector(
-                IERC20.approve.selector,
-                address(conditionalTokens),
-                COLLATERAL_TOKEN_COUNT
-            )
+            abi.encodeWithSelector(IERC20.approve.selector, address(conditionalTokens), COLLATERAL_TOKEN_COUNT)
         );
 
         // Prepare condition
-        conditionalTokens.prepareCondition(
-            ORACLE,
-            questionId,
-            OUTCOME_SLOT_COUNT
-        );
+        conditionalTokens.prepareCondition(ORACLE, questionId, OUTCOME_SLOT_COUNT);
 
         // Split
         split(conditionId, partition, SPLIT_AMOUNT, NULL_BYTES32);
@@ -528,19 +381,13 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
         for (uint256 i = 0; i < payoutNumerators.length; i++) {
             payoutDenominator += payoutNumerators[i];
         }
-        uint256 payout = (((SPLIT_AMOUNT - TRANSFER_AMOUNT) *
-            payoutNumerators[0]) / payoutDenominator) +
-            ((SPLIT_AMOUNT * payoutNumerators[1]) / payoutDenominator);
+        uint256 payout = (((SPLIT_AMOUNT - TRANSFER_AMOUNT) * payoutNumerators[0]) / payoutDenominator)
+            + ((SPLIT_AMOUNT * payoutNumerators[1]) / payoutDenominator);
 
         // redeem should emit PayoutRedemption event
         vm.expectEmit(true, true, true, true);
         emit ConditionalTokens.PayoutRedemption(
-            trader,
-            IERC20(address(collateralToken)),
-            NULL_BYTES32,
-            conditionId,
-            partition,
-            payout
+            trader, IERC20(address(collateralToken)), NULL_BYTES32, conditionId, partition, payout
         );
         redeem(conditionId, partition, NULL_BYTES32);
 
@@ -550,11 +397,7 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
                 trader,
                 conditionalTokens.getPositionId(
                     IERC20(address(collateralToken)),
-                    conditionalTokens.getCollectionId(
-                        NULL_BYTES32,
-                        conditionId,
-                        partition[0]
-                    )
+                    conditionalTokens.getCollectionId(NULL_BYTES32, conditionId, partition[0])
                 )
             ),
             0
@@ -564,27 +407,17 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
                 trader,
                 conditionalTokens.getPositionId(
                     IERC20(address(collateralToken)),
-                    conditionalTokens.getCollectionId(
-                        NULL_BYTES32,
-                        conditionId,
-                        partition[1]
-                    )
+                    conditionalTokens.getCollectionId(NULL_BYTES32, conditionId, partition[1])
                 )
             ),
             0
         );
 
         // should not affect other's positions
-        assertEq(
-            conditionalTokens.balanceOf(COUNTERPARTY, firstPositionId),
-            TRANSFER_AMOUNT
-        );
+        assertEq(conditionalTokens.balanceOf(COUNTERPARTY, firstPositionId), TRANSFER_AMOUNT);
 
         // should credit payout as collateral
-        assertEq(
-            collateralBalanceOf(trader),
-            COLLATERAL_TOKEN_COUNT - SPLIT_AMOUNT + payout
-        );
+        assertEq(collateralBalanceOf(trader), COLLATERAL_TOKEN_COUNT - SPLIT_AMOUNT + payout);
     }
 
     function testManyConditionsSplit() public {
@@ -592,40 +425,23 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
         collateralToken.mint(trader, COLLATERAL_TOKEN_COUNT);
         executeCall(
             address(collateralToken),
-            abi.encodeWithSelector(
-                IERC20.approve.selector,
-                address(conditionalTokens),
-                COLLATERAL_TOKEN_COUNT
-            )
+            abi.encodeWithSelector(IERC20.approve.selector, address(conditionalTokens), COLLATERAL_TOKEN_COUNT)
         );
 
         for (uint256 i = 0; i < conditions.length; i++) {
-            conditionalTokens.prepareCondition(
-                ORACLE,
-                conditions[i].questionId,
-                conditions[i].outcomeSlotCount
-            );
+            conditionalTokens.prepareCondition(ORACLE, conditions[i].questionId, conditions[i].outcomeSlotCount);
         }
 
         uint256[] memory partition0 = new uint256[](2);
         partition0[0] = 7;
         partition0[1] = 8;
 
-        split(
-            conditions[0].id,
-            partition0,
-            COLLATERAL_TOKEN_COUNT,
-            NULL_BYTES32
-        );
+        split(conditions[0].id, partition0, COLLATERAL_TOKEN_COUNT, NULL_BYTES32);
         transfer(
             COUNTERPARTY,
             conditionalTokens.getPositionId(
                 IERC20(address(collateralToken)),
-                conditionalTokens.getCollectionId(
-                    NULL_BYTES32,
-                    conditions[0].id,
-                    partition0[1]
-                )
+                conditionalTokens.getCollectionId(NULL_BYTES32, conditions[0].id, partition0[1])
             ),
             COLLATERAL_TOKEN_COUNT
         );
@@ -635,31 +451,18 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
         partition2[0] = 1;
         partition2[1] = 2;
         partition2[2] = 12;
-        bytes32 parentCollectionId = conditionalTokens.getCollectionId(
-            NULL_BYTES32,
-            conditions[0].id,
-            partition0[0]
-        );
+        bytes32 parentCollectionId = conditionalTokens.getCollectionId(NULL_BYTES32, conditions[0].id, partition0[0]);
 
         vm.expectEmit(true, true, true, true);
         emit ConditionalTokens.PositionSplit(
-            trader,
-            IERC20(address(collateralToken)),
-            parentCollectionId,
-            conditions[1].id,
-            partition2,
-            SPLIT_AMOUNT
+            trader, IERC20(address(collateralToken)), parentCollectionId, conditions[1].id, partition2, SPLIT_AMOUNT
         );
         split(conditions[1].id, partition2, SPLIT_AMOUNT, parentCollectionId);
 
         // ensure value in parent position is burned
         assertEq(
             conditionalTokens.balanceOf(
-                trader,
-                conditionalTokens.getPositionId(
-                    IERC20(address(collateralToken)),
-                    parentCollectionId
-                )
+                trader, conditionalTokens.getPositionId(IERC20(address(collateralToken)), parentCollectionId)
             ),
             COLLATERAL_TOKEN_COUNT - SPLIT_AMOUNT
         );
@@ -670,11 +473,7 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
                 trader,
                 conditionalTokens.getPositionId(
                     IERC20(address(collateralToken)),
-                    conditionalTokens.getCollectionId(
-                        parentCollectionId,
-                        conditions[1].id,
-                        partition2[0]
-                    )
+                    conditionalTokens.getCollectionId(parentCollectionId, conditions[1].id, partition2[0])
                 )
             ),
             SPLIT_AMOUNT
@@ -684,11 +483,7 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
                 trader,
                 conditionalTokens.getPositionId(
                     IERC20(address(collateralToken)),
-                    conditionalTokens.getCollectionId(
-                        parentCollectionId,
-                        conditions[1].id,
-                        partition2[1]
-                    )
+                    conditionalTokens.getCollectionId(parentCollectionId, conditions[1].id, partition2[1])
                 )
             ),
             SPLIT_AMOUNT
@@ -700,19 +495,11 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
         collateralToken.mint(trader, COLLATERAL_TOKEN_COUNT);
         executeCall(
             address(collateralToken),
-            abi.encodeWithSelector(
-                IERC20.approve.selector,
-                address(conditionalTokens),
-                COLLATERAL_TOKEN_COUNT
-            )
+            abi.encodeWithSelector(IERC20.approve.selector, address(conditionalTokens), COLLATERAL_TOKEN_COUNT)
         );
 
         for (uint256 i = 0; i < conditions.length; i++) {
-            conditionalTokens.prepareCondition(
-                ORACLE,
-                conditions[i].questionId,
-                conditions[i].outcomeSlotCount
-            );
+            conditionalTokens.prepareCondition(ORACLE, conditions[i].questionId, conditions[i].outcomeSlotCount);
         }
 
         uint256[] memory partition0 = new uint256[](2);
@@ -738,21 +525,12 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
         }
         payout = (payout * COLLATERAL_TOKEN_COUNT) / payoutDenominator;
 
-        split(
-            conditions[0].id,
-            partition0,
-            COLLATERAL_TOKEN_COUNT,
-            NULL_BYTES32
-        );
+        split(conditions[0].id, partition0, COLLATERAL_TOKEN_COUNT, NULL_BYTES32);
         transfer(
             COUNTERPARTY,
             conditionalTokens.getPositionId(
                 IERC20(address(collateralToken)),
-                conditionalTokens.getCollectionId(
-                    NULL_BYTES32,
-                    conditions[0].id,
-                    partition0[1]
-                )
+                conditionalTokens.getCollectionId(NULL_BYTES32, conditions[0].id, partition0[1])
             ),
             COLLATERAL_TOKEN_COUNT
         );
@@ -760,21 +538,14 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
         // report and emit ConditionResolution event
         vm.expectEmit(true, true, true, true);
         emit ConditionalTokens.ConditionResolution(
-            conditions[0].id,
-            ORACLE,
-            conditions[0].questionId,
-            conditions[0].outcomeSlotCount,
-            finalReport
+            conditions[0].id, ORACLE, conditions[0].questionId, conditions[0].outcomeSlotCount, finalReport
         );
         vm.prank(ORACLE);
         conditionalTokens.reportPayouts(conditions[0].questionId, finalReport);
 
         // should reflect report via payoutNumerators
         for (uint256 i = 0; i < finalReport.length; i++) {
-            assertEq(
-                conditionalTokens.payoutNumerators(conditions[0].id, i),
-                finalReport[i]
-            );
+            assertEq(conditionalTokens.payoutNumerators(conditions[0].id, i), finalReport[i]);
         }
 
         // should not allow another update to the report
@@ -785,12 +556,7 @@ abstract contract ConditionalTokensSplitMergeBase is Test {
         // redeem should emit PayoutRedemption event
         vm.expectEmit(true, true, true, true);
         emit ConditionalTokens.PayoutRedemption(
-            trader,
-            IERC20(address(collateralToken)),
-            NULL_BYTES32,
-            conditions[0].id,
-            redeemSet,
-            payout
+            trader, IERC20(address(collateralToken)), NULL_BYTES32, conditions[0].id, redeemSet, payout
         );
         redeem(conditions[0].id, redeemSet, NULL_BYTES32);
     }
@@ -810,7 +576,7 @@ contract EOATraderTest is ConditionalTokensSplitMergeBase {
 
     function executeCall(address target, bytes memory data) public override {
         vm.prank(TRADER);
-        (bool success, ) = target.call(data);
+        (bool success,) = target.call(data);
         require(success, "Call failed");
     }
 }
