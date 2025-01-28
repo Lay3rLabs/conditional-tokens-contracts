@@ -1,17 +1,10 @@
-## Foundry
+# Conditional Tokens Contracts
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
-
-Foundry consists of:
-
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+Solidity smart contracts for conditional tokens, forked from [Gnosis Safe's old implementation](https://github.com/gnosis/conditional-tokens-contracts) and updated to use [Foundry](https://getfoundry.sh/) and standard [OpenZeppelin](https://www.openzeppelin.com/solidity-contracts) contracts.
 
 ## Documentation
 
-https://book.getfoundry.sh/
+https://conditional-tokens.readthedocs.io/en/latest/
 
 ## Usage
 
@@ -24,43 +17,9 @@ $ forge build
 ### Test
 
 ```shell
-$ forge test
+$ forge test -vvv
 ```
 
-### Format
+## License
 
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+All smart contracts are released under the [`LGPL 3.0`](https://www.gnu.org/licenses/lgpl-3.0.en.html) license.
