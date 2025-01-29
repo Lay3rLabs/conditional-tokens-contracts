@@ -8,22 +8,20 @@ library CTHelpers {
     /// @param oracle The account assigned to report the result for the prepared condition.
     /// @param questionId An identifier for the question to be answered by the oracle.
     /// @param outcomeSlotCount The number of outcome slots which should be used for this condition. Must not exceed 256.
-    function getConditionId(
-        address oracle,
-        bytes32 questionId,
-        uint outcomeSlotCount
-    ) internal pure returns (bytes32) {
-        return
-            keccak256(abi.encodePacked(oracle, questionId, outcomeSlotCount));
+    function getConditionId(address oracle, bytes32 questionId, uint256 outcomeSlotCount)
+        internal
+        pure
+        returns (bytes32)
+    {
+        return keccak256(abi.encodePacked(oracle, questionId, outcomeSlotCount));
     }
 
-    uint constant P =
-        21888242871839275222246405745257275088696311157297823662689037894645226208583;
-    uint constant B = 3;
+    uint256 constant P = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
+    uint256 constant B = 3;
 
     //! when this is replaced with openzeppelin's Math.sqrt, the `getCollectionId` function infinite loops, probably due to the interdependent nature of this specific sqrt math implementation and the constant P that it uses
-    function sqrt(uint x) private pure returns (uint y) {
-        uint p = P;
+    function sqrt(uint256 x) private pure returns (uint256 y) {
+        uint256 p = P;
         // solium-disable-next-line security/no-inline-assembly
         assembly {
             // add chain generated via https://crypto.stackexchange.com/q/27179/71252
@@ -397,15 +395,15 @@ library CTHelpers {
     /// @param parentCollectionId Collection ID of the parent outcome collection, or bytes32(0) if there's no parent.
     /// @param conditionId Condition ID of the outcome collection to combine with the parent outcome collection.
     /// @param indexSet Index set of the outcome collection to combine with the parent outcome collection.
-    function getCollectionId(
-        bytes32 parentCollectionId,
-        bytes32 conditionId,
-        uint indexSet
-    ) internal view returns (bytes32) {
-        uint x1 = uint(keccak256(abi.encodePacked(conditionId, indexSet)));
+    function getCollectionId(bytes32 parentCollectionId, bytes32 conditionId, uint256 indexSet)
+        internal
+        view
+        returns (bytes32)
+    {
+        uint256 x1 = uint256(keccak256(abi.encodePacked(conditionId, indexSet)));
         bool odd = x1 >> 255 != 0;
-        uint y1;
-        uint yy;
+        uint256 y1;
+        uint256 yy;
         do {
             x1 = addmod(x1, 1, P);
             yy = addmod(mulmod(x1, mulmod(x1, x1, P), P), B, P);
@@ -413,20 +411,18 @@ library CTHelpers {
         } while (mulmod(y1, y1, P) != yy);
         if ((odd && y1 % 2 == 0) || (!odd && y1 % 2 == 1)) y1 = P - y1;
 
-        uint x2 = uint(parentCollectionId);
+        uint256 x2 = uint256(parentCollectionId);
         if (x2 != 0) {
             odd = x2 >> 254 != 0;
             x2 = (x2 << 2) >> 2;
             yy = addmod(mulmod(x2, mulmod(x2, x2, P), P), B, P);
-            uint y2 = sqrt(yy);
+            uint256 y2 = sqrt(yy);
             if ((odd && y2 % 2 == 0) || (!odd && y2 % 2 == 1)) y2 = P - y2;
             require(mulmod(y2, y2, P) == yy, "invalid parent collection ID");
 
-            (bool success, bytes memory ret) = address(6).staticcall(
-                abi.encode(x1, y1, x2, y2)
-            );
+            (bool success, bytes memory ret) = address(6).staticcall(abi.encode(x1, y1, x2, y2));
             require(success, "ecadd failed");
-            (x1, y1) = abi.decode(ret, (uint, uint));
+            (x1, y1) = abi.decode(ret, (uint256, uint256));
         }
 
         if (y1 % 2 == 1) x1 ^= 1 << 254;
@@ -437,10 +433,7 @@ library CTHelpers {
     /// @dev Constructs a position ID from a collateral token and an outcome collection. These IDs are used as the ERC-1155 ID for this contract.
     /// @param collateralToken Collateral token which backs the position.
     /// @param collectionId ID of the outcome collection associated with this position.
-    function getPositionId(
-        IERC20 collateralToken,
-        bytes32 collectionId
-    ) internal pure returns (uint) {
-        return uint(keccak256(abi.encodePacked(collateralToken, collectionId)));
+    function getPositionId(IERC20 collateralToken, bytes32 collectionId) internal pure returns (uint256) {
+        return uint256(keccak256(abi.encodePacked(collateralToken, collectionId)));
     }
 }
