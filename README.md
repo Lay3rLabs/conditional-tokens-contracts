@@ -6,6 +6,8 @@ Solidity smart contracts for conditional tokens, forked from [Gnosis Safe's old 
 
 https://conditional-tokens.readthedocs.io/en/latest/
 
+https://gnosis-pm-contracts.readthedocs.io/en/latest/
+
 ## Usage
 
 ### Build
