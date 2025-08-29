@@ -3,7 +3,9 @@ pragma solidity ^0.8.22;
 
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
 import {ERC1155} from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {CTHelpers} from "./CTHelpers.sol";
+import {Interaction} from "./IIndexedEvents.sol";
 
 contract ConditionalTokens is ERC1155 {
     /// @dev Emitted upon the successful preparation of a condition.
@@ -257,6 +259,11 @@ contract ConditionalTokens is ERC1155 {
             }
         }
         emit PayoutRedemption(msg.sender, collateralToken, parentCollectionId, conditionId, indexSets, totalPayout);
+
+        string[] memory tags = new string[](2);
+        tags[0] = string.concat("collateralToken:", Strings.toHexString(address(collateralToken)));
+        tags[1] = string.concat("parentCollectionId:", Strings.toHexString(uint256(parentCollectionId)));
+        emit Interaction(msg.sender, "prediction_market_redeem", tags, abi.encode(totalPayout));
     }
 
     /// @dev Gets the outcome slot count of a condition.
