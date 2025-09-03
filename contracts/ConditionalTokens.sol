@@ -254,16 +254,17 @@ contract ConditionalTokens is ERC1155 {
                 require(
                     collateralToken.transfer(msg.sender, totalPayout), "could not transfer payout to message sender"
                 );
+
+                // emit Interaction ONLY on successful root payout redemption
+                string[] memory tags = new string[](2);
+                tags[0] = string.concat("collateralToken:", Strings.toHexString(address(collateralToken)));
+                tags[1] = string.concat("parentCollectionId:", Strings.toHexString(uint256(parentCollectionId)));
+                emit Interaction(msg.sender, "prediction_market_redeem", tags, abi.encode(totalPayout));
             } else {
                 _mint(msg.sender, CTHelpers.getPositionId(collateralToken, parentCollectionId), totalPayout, "");
             }
         }
         emit PayoutRedemption(msg.sender, collateralToken, parentCollectionId, conditionId, indexSets, totalPayout);
-
-        string[] memory tags = new string[](2);
-        tags[0] = string.concat("collateralToken:", Strings.toHexString(address(collateralToken)));
-        tags[1] = string.concat("parentCollectionId:", Strings.toHexString(uint256(parentCollectionId)));
-        emit Interaction(msg.sender, "prediction_market_redeem", tags, abi.encode(totalPayout));
     }
 
     /// @dev Gets the outcome slot count of a condition.
