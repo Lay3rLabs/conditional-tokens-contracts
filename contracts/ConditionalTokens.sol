@@ -258,7 +258,7 @@ contract ConditionalTokens is ERC1155 {
                 // emit Interaction ONLY on successful root payout redemption
                 string[] memory tags = new string[](2);
                 tags[0] = string.concat("collateralToken:", Strings.toHexString(address(collateralToken)));
-                tags[1] = string.concat("parentCollectionId:", Strings.toHexString(uint256(parentCollectionId)));
+                tags[1] = string.concat("conditionId:", Strings.toHexString(uint256(conditionId)));
                 emit Interaction(msg.sender, "prediction_market_redeem", tags, abi.encode(totalPayout));
             } else {
                 _mint(msg.sender, CTHelpers.getPositionId(collateralToken, parentCollectionId), totalPayout, "");
